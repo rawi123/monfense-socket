@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "start": "node socket.js"
+  },
   "dependencies": {
     "socket.io": "^4.4.0"
   }
