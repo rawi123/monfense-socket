@@ -1,6 +1,6 @@
 const io = require("socket.io")(process.env.PORT || 5000, {
     cors: {
-        origin: ["http://localhost:3000","https://monofense.herokuapp.com"]
+        origin: ["http://localhost:3000", "https://monofense.herokuapp.com"]
     }
 });
 
@@ -66,12 +66,14 @@ io.on("connection", socket => {
         io.to([...socket.rooms][0]).emit("player-move", oldPos, sum, turn, players, updatedPlayers, diceArr, cards)
     })
 
-    socket.on("next-turn", (turn, players,cards) => {
-        const roomPlayers = [...io.sockets.adapter.rooms.get([...socket.rooms][0])];
-        turn++;
-        if (turn === roomPlayers.length - 1)
-            turn = 0;
-        io.to([...socket.rooms][0]).emit("next-turn", turn, players,cards)
+    socket.on("next-turn", (turn, players, cards) => {
+
+        let newTurn = players.find(val => val.number > turn);
+
+        if (!newTurn) newTurn = players[0].number
+        else newTurn = newTurn.number;
+        
+        io.to([...socket.rooms][0]).emit("next-turn", newTurn, players, cards)
     })
 
     socket.on('disconnect', function () {
