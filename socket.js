@@ -1,6 +1,6 @@
 const io = require("socket.io")(process.env.PORT || 5000, {
     cors: {
-        origin: ["http://localhost:3000","https://monofense.herokuapp.com/"]
+        origin: ["http://localhost:3000","https://monofense.herokuapp.com"]
     }
 });
 
