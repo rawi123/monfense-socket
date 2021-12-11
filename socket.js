@@ -6,6 +6,7 @@ const io = require("socket.io")(process.env.PORT || 5000, {
 
 let latestRoom = 1;
 
+let users = {};
 
 io.on("connection", socket => {
 
@@ -41,21 +42,32 @@ io.on("connection", socket => {
         io.emit('return-rooms', getRooms());
     })
 
+
     socket.on("get-rooms", () => {
         io.emit('return-rooms', getRooms());
     })
 
     socket.on("start-game", (room) => {
         const roomData = io.sockets.adapter.rooms.get(room);
-        // if (roomData.size >= 2) {
-        io.emit('return-rooms', getRooms());
-        io.to(room).emit("play-game", [...roomData]);
-        roomData.add("playing");
-        // }
+        if (roomData.size >= 2) {
+            [...roomData].map(val => users[val] = { room: room, cards: [] });
+            io.emit('return-rooms', getRooms());
+            io.to(room).emit("play-game", [...roomData], room);
+            roomData.add("playing");
+        }
+    })
+
+    socket.on("set-cards", (cards, room) => {
+        const roomData = io.sockets.adapter.rooms.get(room);
+        [...roomData].map(val => users[val] = { ...users[val], cards });
     })
 
     socket.on("send-message", (message, room) => {
         socket.broadcast.to(room).emit("recive-message", message)
+    })
+
+    socket.on("send-message-ingame", (message, room,username) => {
+        socket.broadcast.to(room).emit("recive-message-ingame", message,socket.id,username)
     })
 
     socket.on("socket-room", (cb) => {
@@ -68,20 +80,44 @@ io.on("connection", socket => {
 
     socket.on("next-turn", (turn, players, cards) => {
 
+        const roomData = io.sockets.adapter.rooms.get([...socket.rooms][0]);
+        [...roomData].map(val => users[val] = { ...users[val], cards });
+
         let newTurn = players.find(val => val.number > turn);
 
         if (!newTurn) newTurn = players[0].number
         else newTurn = newTurn.number;
-        
+
         io.to([...socket.rooms][0]).emit("next-turn", newTurn, players, cards)
     })
 
+    socket.on("add-player",(room,player)=>{
+        io.to(room).emit("add-player",player)
+    })
+
+    socket.on("fight-started", pokemonFight => {
+        io.to([...socket.rooms][0]).emit("fight-started", pokemonFight)
+    })
+
+    socket.on("pokemon-play-turn", (newPokemons, method, attackingName, attackingEnemy, damage) => {
+        io.to([...socket.rooms][0]).emit("pokemon-play-turn", newPokemons, method, attackingName, attackingEnemy, damage);
+    })
+
     socket.on('disconnect', function () {
+        
+        if (users[socket.id]) {
+            const roomData = [...io.sockets.adapter.rooms.get(users[socket.id].room)].filter(val => val !== "playing");
+            io.to(users[socket.id].room).emit("player-left", roomData, socket.id, users[socket.id].cards);
+        }
+
+        delete users[socket.id];
+
         [...io.sockets.adapter.rooms].map((room) => {
             if ([...room[1]][0] === "playing")
                 io.sockets.adapter.rooms.delete(room[0]);
         })
     });
+
 })
 
 
