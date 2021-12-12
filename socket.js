@@ -50,7 +50,7 @@ io.on("connection", socket => {
     socket.on("start-game", (room) => {
         const roomData = io.sockets.adapter.rooms.get(room);
         if (roomData.size >= 2) {
-            [...roomData].map(val => users[val] = { room: room, cards: [] });
+            [...roomData].map(val => users[val] = { room: room, cards: [], players: [] });
             io.emit('return-rooms', getRooms());
             io.to(room).emit("play-game", [...roomData], room);
             roomData.add("playing");
@@ -66,8 +66,8 @@ io.on("connection", socket => {
         socket.broadcast.to(room).emit("recive-message", message)
     })
 
-    socket.on("send-message-ingame", (message, room,username) => {
-        socket.broadcast.to(room).emit("recive-message-ingame", message,socket.id,username)
+    socket.on("send-message-ingame", (message, room, username) => {
+        socket.broadcast.to(room).emit("recive-message-ingame", message, socket.id, username)
     })
 
     socket.on("socket-room", (cb) => {
@@ -81,7 +81,7 @@ io.on("connection", socket => {
     socket.on("next-turn", (turn, players, cards) => {
 
         const roomData = io.sockets.adapter.rooms.get([...socket.rooms][0]);
-        [...roomData].map(val => users[val] = { ...users[val], cards });
+        [...roomData].map(val => users[val] = { ...users[val], cards, players });
 
         let newTurn = players.find(val => val.number > turn);
 
@@ -91,8 +91,8 @@ io.on("connection", socket => {
         io.to([...socket.rooms][0]).emit("next-turn", newTurn, players, cards)
     })
 
-    socket.on("add-player",(room,player)=>{
-        io.to(room).emit("add-player",player)
+    socket.on("add-player", (room, player) => {
+        io.to(room).emit("add-player", player)
     })
 
     socket.on("fight-started", pokemonFight => {
@@ -104,10 +104,11 @@ io.on("connection", socket => {
     })
 
     socket.on('disconnect', function () {
-        
+
         if (users[socket.id]) {
             const roomData = [...io.sockets.adapter.rooms.get(users[socket.id].room)].filter(val => val !== "playing");
-            io.to(users[socket.id].room).emit("player-left", roomData, socket.id, users[socket.id].cards);
+
+            io.to(users[socket.id].room).emit("player-left", roomData, socket.id, users[socket.id].cards, users[socket.id].players);
         }
 
         delete users[socket.id];
