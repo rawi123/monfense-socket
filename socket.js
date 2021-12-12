@@ -48,7 +48,6 @@ io.on("connection", socket => {
     })
 
     socket.on("start-game", (room) => {
-        console.log(room)
         const roomData = io.sockets.adapter.rooms.get(room);
         if (roomData.size >= 2) {
             [...roomData].map(val => users[val] = { room: room, cards: [], players: [] });
@@ -61,6 +60,11 @@ io.on("connection", socket => {
     socket.on("set-cards", (cards, room) => {
         const roomData = io.sockets.adapter.rooms.get(room);
         [...roomData].map(val => users[val] = { ...users[val], cards });
+    })
+
+    socket.on("set-players", (players, room) => {
+        const roomData = io.sockets.adapter.rooms.get(room);
+        [...roomData].map(val => users[val] = { ...users[val], players });
     })
 
     socket.on("send-message", (message, room) => {
