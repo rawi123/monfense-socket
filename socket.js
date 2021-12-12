@@ -48,6 +48,7 @@ io.on("connection", socket => {
     })
 
     socket.on("start-game", (room) => {
+        console.log(room)
         const roomData = io.sockets.adapter.rooms.get(room);
         if (roomData.size >= 2) {
             [...roomData].map(val => users[val] = { room: room, cards: [], players: [] });
